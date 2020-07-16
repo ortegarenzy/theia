@@ -19,6 +19,9 @@ import { VSXExtensionResolver } from './vsx-extension-resolver';
 import { PluginDeployerResolver } from '@theia/plugin-ext/lib/common/plugin-protocol';
 import { VSXRegistryAPI } from '../common/vsx-registry-api';
 import { VSXEnvironment } from '../common/vsx-environment';
+import { VSXVariablesServerImpl } from './vsx-variables-server';
+import { VSXVariablesServer, VSX_VARIABLES_SERVER_PATH } from '../common/vsx-variables-server';
+import { JsonRpcConnectionHandler, ConnectionHandler } from '@theia/core/lib/common/messaging';
 
 export default new ContainerModule(bind => {
     bind(VSXEnvironment).toSelf().inRequestScope();
@@ -26,4 +29,12 @@ export default new ContainerModule(bind => {
 
     bind(VSXExtensionResolver).toSelf().inSingletonScope();
     bind(PluginDeployerResolver).toService(VSXExtensionResolver);
+
+    bind(VSXVariablesServer).to(VSXVariablesServerImpl).inSingletonScope();
+    bind(ConnectionHandler).toDynamicValue(ctx =>
+        new JsonRpcConnectionHandler(VSX_VARIABLES_SERVER_PATH, () =>
+            ctx.container.get(VSXVariablesServer)
+        )
+    ).inSingletonScope();
+
 });

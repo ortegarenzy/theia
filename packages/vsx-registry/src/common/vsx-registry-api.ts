@@ -15,9 +15,11 @@
  ********************************************************************************/
 
 import * as bent from 'bent';
+import * as semver from 'semver';
 import { injectable, inject } from 'inversify';
-import { VSXExtensionRaw, VSXSearchParam, VSXSearchResult } from './vsx-registry-types';
+import { VSXExtensionRaw, VSXSearchParam, VSXSearchResult, VSXAllVersions } from './vsx-registry-types';
 import { VSXEnvironment } from './vsx-environment';
+import { VSXVariablesServer } from './vsx-variables-server';
 
 const fetchText = bent('GET', 'string', 200);
 const fetchJson = bent('GET', 'json', 200);
@@ -38,6 +40,9 @@ export class VSXRegistryAPI {
 
     @inject(VSXEnvironment)
     protected readonly environment: VSXEnvironment;
+
+    @inject(VSXVariablesServer)
+    protected readonly variablesServer: VSXVariablesServer;
 
     async search(param?: VSXSearchParam): Promise<VSXSearchResult> {
         const apiUri = await this.environment.getRegistryApiUri();
@@ -68,6 +73,11 @@ export class VSXRegistryAPI {
         return this.fetchJson(apiUri.resolve(id.replace('.', '/')).toString());
     }
 
+    async getExtensionVersion(id: string, version?: string): Promise<VSXExtensionRaw> {
+        const apiUri = await this.environment.getRegistryApiUri();
+        return this.fetchJson(apiUri.resolve(id.replace('.', '/')).toString() + `/${version}`);
+    }
+
     protected async fetchJson<T>(url: string): Promise<T> {
         const result = await fetchJson(url);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -76,6 +86,35 @@ export class VSXRegistryAPI {
 
     fetchText(url: string): Promise<string> {
         return fetchText(url);
+    }
+
+    /**
+     * Get the latest compatible version of an extension.
+     * @param versions the `allVersions` property.
+     *
+     * @returns the latest compatible version of an extension if it exists, else `undefined`.
+     */
+    async getLatestCompatibleVersion(versions: VSXAllVersions[]): Promise<{ version: string, api: string, url: string } | undefined> {
+        for (const data of versions) {
+            if (!data.engines) {
+                continue;
+            }
+            if (await this.isEngineValid(data.engines.vscode)) {
+                return { version: data.version, api: data.engines.vscode, url: data.url };
+            }
+        }
+        return undefined;
+    }
+
+    /**
+     * Determine if the engine is valid.
+     * @param engine the engine.
+     *
+     * @returns `true` if the engine satisfies the API version.
+     */
+    protected async isEngineValid(engine: string): Promise<boolean> {
+        const apiVersion = await this.variablesServer.getVscodeApiVersion();
+        return engine === '*' || semver.satisfies(apiVersion, engine);
     }
 
 }

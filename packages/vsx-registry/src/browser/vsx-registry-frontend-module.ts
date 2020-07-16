@@ -17,7 +17,10 @@
 import '../../src/browser/style/index.css';
 
 import { ContainerModule } from 'inversify';
-import { WidgetFactory, bindViewContribution, FrontendApplicationContribution, ViewContainerIdentifier, OpenHandler, WidgetManager } from '@theia/core/lib/browser';
+import {
+    WidgetFactory, bindViewContribution, FrontendApplicationContribution, ViewContainerIdentifier,
+    OpenHandler, WidgetManager, WebSocketConnectionProvider
+} from '@theia/core/lib/browser';
 import { VSXExtensionsViewContainer } from './vsx-extensions-view-container';
 import { VSXExtensionsContribution } from './vsx-extensions-contribution';
 import { VSXExtensionsSearchBar } from './vsx-extensions-search-bar';
@@ -32,6 +35,8 @@ import { VSXExtensionEditorManager } from './vsx-extension-editor-manager';
 import { VSXExtensionsSourceOptions } from './vsx-extensions-source';
 import { VSXEnvironment } from '../common/vsx-environment';
 import { VSXExtensionsSearchModel } from './vsx-extensions-search-model';
+import { VSXVariablesServerCached } from './vsx-variables-server-cached';
+import { VSXVariablesServerRemote, VSX_VARIABLES_SERVER_PATH, VSXVariablesServer } from '../common/vsx-variables-server';
 
 export default new ContainerModule(bind => {
     bind(VSXEnvironment).toSelf().inRequestScope();
@@ -90,4 +95,10 @@ export default new ContainerModule(bind => {
     bind(FrontendApplicationContribution).toService(VSXExtensionsContribution);
     bind(ColorContribution).toService(VSXExtensionsContribution);
     bind(TabBarToolbarContribution).toService(VSXExtensionsContribution);
+
+    bind(VSXVariablesServerRemote).toDynamicValue(ctx =>
+        WebSocketConnectionProvider.createProxy(ctx.container, VSX_VARIABLES_SERVER_PATH)
+    ).inSingletonScope();
+    bind(VSXVariablesServer).to(VSXVariablesServerCached).inSingletonScope();
+
 });

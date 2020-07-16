@@ -29,6 +29,10 @@ export class PluginVsCodeCliContribution implements CliContribution, PluginHostE
 
     protected vsCodeApiVersion: string | undefined;
 
+    getApiVersion(): string | undefined {
+        return this.vsCodeApiVersion;
+    }
+
     configure(conf: Argv): void {
         conf.option(PluginVsCodeCliContribution.VSCODE_API_VERSION, {
             // eslint-disable-next-line max-len

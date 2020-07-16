@@ -33,6 +33,14 @@ export interface VSXSearchResult {
     readonly extensions: VSXSearchEntry[];
 }
 
+export interface VSXAllVersions {
+    url: string,
+    version: string,
+    engines?: {
+        [version: string]: string
+    }
+}
+
 /**
  * Should be aligned with https://github.com/eclipse/openvsx/blob/master/server/src/main/java/org/eclipse/openvsx/json/SearchEntryJson.java
  */
@@ -52,6 +60,7 @@ export interface VSXSearchEntry {
     readonly downloadCount: number;
     readonly displayName?: string;
     readonly description?: string;
+    readonly allVersions: VSXAllVersions[];
 }
 
 export type VSXExtensionNamespaceAccess = 'public' | 'restricted';
